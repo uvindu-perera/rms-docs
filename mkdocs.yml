@@ -1,0 +1,58 @@
+site_name: RMS Documentation
+site_description: Documentation for the RMS service suite
+repo_url: https://github.com/uvindu-perera/rms-docs
+repo_name: rms-docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Data Warehouse:
+      - rmdb-etl: rmdb-etl.md
+      - rmdb-analytics: rmdb-analytics.md
+  - Orchestration:
+      - rms-central-command: rms-central-command.md
+  - Risk Profiling:
+      - rms-individuals: rms-individuals.md
+      - rms-ratings: rms-ratings.md
+      - rms-suppliers: rms-suppliers.md
+  - Extraction & Reporting:
+      - rms-revenue-extract: rms-revenue-extract.md
+      - rms-ai-insights: rms-ai-insights.md
+  - Vehicle Import Review:
+      - rms-vehicle-annotate: rms-vehicle-annotate.md
+      - rms-vehicle-review: rms-vehicle-review.md
