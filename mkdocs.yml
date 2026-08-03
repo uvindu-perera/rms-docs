@@ -53,6 +53,7 @@ nav:
   - Risk Profiling:
       - rms-individuals: rms-individuals.md
       - rms-ratings: rms-ratings.md
+      - rms-simulator: rms-simulator.md
       - rms-suppliers: rms-suppliers.md
   - Extraction & Reporting:
       - rms-revenue-extract: rms-revenue-extract.md

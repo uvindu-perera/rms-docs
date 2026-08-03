@@ -19,6 +19,7 @@ SOURCES=(
   "rms-central-command:rms-central-command"
   "rms-individuals:rms-individuals"
   "rms-ratings:rms-ratings"
+  "rms-simulator:rms-simulator"
   "rms-suppliers:rms-suppliers"
   "rms-revenue-extract:rms-revenue-extract"
   "rms-vehicle-annotate:rms-vehicle-annotate"

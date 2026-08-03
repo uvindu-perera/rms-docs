@@ -22,6 +22,8 @@ in one searchable place.
   risk-continuity layer.
 - [rms-ratings](rms-ratings.md) — risk rating computation for profiling
   workflows.
+- [rms-simulator](rms-simulator.md) — ASYCUDA World selectivity rule
+  simulation engine for testing criteria changes.
 - [rms-suppliers](rms-suppliers.md) — foreign supplier entity resolution.
 
 ## Extraction and Reporting

@@ -168,7 +168,8 @@ Important fields include:
 - `vehicle_year`: declared/model year.
 - `tar_hsc_nb1`: tariff HS code.
 - `source_fuel_type`, `fuel_type`: raw and normalized fuel.
-- `engine_capacity`, `capacity_cc`: raw and parsed capacity.
+- `engine_capacity`, `capacity`, `capacity_uom`: raw capacity text and
+  resolved capacity with unit (`CC` / `KWH` / `UNKNOWN`).
 - `value_usd`: per-vehicle declared value in USD.
 - `annotation_source`: annotation method or failure marker.
 - `annotated_at`: source annotation timestamp.
@@ -181,7 +182,8 @@ Peer groups use the following grain:
 - normalized fuel type;
 - normalized make;
 - normalized model;
-- rounded capacity band;
+- capacity unit of measure (`CC` / `KWH` / `UNKNOWN`);
+- rounded capacity band (cc and kWh banded separately);
 - vehicle year.
 
 The matching row supplies:
@@ -448,7 +450,8 @@ Example input evidence:
     "vehicle_model": "PRIUS",
     "vehicle_year": 2022,
     "fuel_type": "Petrol/Electric",
-    "capacity_cc": 1800,
+    "capacity": 1800,
+    "capacity_uom": "CC",
     "value_usd": 7000
   },
   "peer_statistics": {
@@ -676,7 +679,9 @@ Optional:
 - `breaks`: pause in seconds after each LLM-reviewed record.
 - `batch_size`: records loaded and committed per batch.
 - `min_peer_count`: minimum support for deterministic clearance.
-- `capacity_band_cc`: peer capacity rounding band.
+- `capacity_band_cc`: peer capacity rounding band for `CC`/`UNKNOWN`.
+- `capacity_band_kwh`: peer capacity rounding band for `KWH` (matches
+  annotate).
 - `value_band_tolerance_pct`: labels small outside-band deviations as
   borderline evidence for the LLM.
 - `chassis_value_difference_pct`: repeated-chassis value-spread threshold.
