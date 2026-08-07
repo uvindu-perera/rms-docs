@@ -154,7 +154,7 @@ Simulation run metadata and progress tracking.
 | `name`            | Simulation name (legacy `simulation_id`)                           |
 | `status`          | `running` / `success` / `failed`                                   |
 | `from_date`       | Start of registration-date range (inclusive)                       |
-| `to_date`         | End of registration-date range (exclusive)                         |
+| `to_date`         | End of registration-date range (inclusive)                         |
 | `office_code`     | Customs office simulated (default `CBHQ1`)                         |
 | `rule_keys`       | Comma-separated subset of rules, or `''` for all active            |
 | `cusdec_count`    | Number of declarations processed                                   |
@@ -484,7 +484,7 @@ python main.py simulate --from-date 2025-01-01 --to-date 2025-01-15 --name "Test
 | Argument | Required | Description |
 | -------- | -------- | ----------- |
 | `--from-date` | Yes | Start registration date (inclusive), format `YYYY-MM-DD` |
-| `--to-date` | Yes | End registration date (exclusive, like the legacy app), format `YYYY-MM-DD` |
+| `--to-date` | Yes | End registration date (inclusive), format `YYYY-MM-DD` |
 | `--name` | Yes | Simulation name (appears in `sim_runs.name`) |
 | `--office` | No | Customs office (default: `settings.yaml` `default_office`, typically `CBHQ1`) |
 | `--rules` | No | Comma-separated rule keys to restrict simulation (default: all active rules) |
