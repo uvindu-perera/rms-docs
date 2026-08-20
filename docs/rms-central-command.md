@@ -543,17 +543,21 @@ The dashboard is organized by **product groups** in the top bar, with
   Databases, Run History;
 - **Simulator** — Rules & Simulations, Recent Runs, Compare;
 - **Blue Channel Review** — Review (latest PCA snapshot, batch switcher,
-  downloads, Mail, delete this batch), History (all batches, bulk delete).
+  Combined Reports, Combined Cover Letters, Mail All, delete this batch),
+  History (all batches, bulk delete).
 
 Additional groups can be registered in `src/web/nav.py` without rewriting the
 base layout.
 
 The Blue Channel Review group reads `rmdb_schema.bcr_*` snapshots written by
 `rms-blue-channel-review`. Quarterly generation is automatic. Emailing company
-packs requires **Full** access and an explicit Mail click; the scheduled
-package never sends mail. Processed batches can be opened from Review or
-History and deleted (snapshot rows plus `output/<run_id>/` PDFs) with Full
-access; a run still marked `running` cannot be deleted.
+packs requires **Full** access and an explicit Mail click, which opens a
+confirmation dialog. Tick **Test Email** to send only to the address in
+`rms-blue-channel-review` `config/settings.yaml` (`email.test_email`, default
+`uvindu@gmail.com`) instead of company contacts. The scheduled package never
+sends mail. Processed batches can be opened from Review or History and deleted
+(snapshot rows plus `output/<run_id>/` PDFs) with Full access; interrupted
+batches that remain marked `running` can be deleted.
 
 The dashboard provides (ARMS ETL):
 
