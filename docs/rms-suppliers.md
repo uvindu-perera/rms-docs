@@ -366,7 +366,7 @@ journalctl -u rms-suppliers-scheduler -f
 The service is organized into focused modules that map directly to the supplier-resolution workflow:
 
 - `main.py`
-  - CLI command routing (`setup`, `migrate`, `full`, `incremental`, `backfill`, `test`)
+  - CLI command routing (`setup`, `migrate`, `seed-missing-ratings`, `full`, `incremental`, `backfill`, `test`)
   - argument parsing and execution mode selection (`new` vs `--legacy`)
 - `scheduler.py`
   - APScheduler cron execution based on `config/schedules.yaml`
@@ -399,6 +399,7 @@ Supplier ingestion is read-driven from RMDB source tables and write-driven into 
      - import declarations (`ide_typ_sad = 'IM'`)
      - CPC-like condition (`RIGHT(COALESCE(si.tar_prc_ext, ''), 2) = '00'`)
      - supplier name present (`cmp_exp_nam IS NOT NULL`)
+     - export country not domestic (`gen_cty_ept_cod NOT IN ('LK', 'LM')`)
      - supplier IDs not yet fully assigned
      - optional date and office filters from settings/runtime arguments
 2. **Normalization**
@@ -412,6 +413,7 @@ Supplier ingestion is read-driven from RMDB source tables and write-driven into 
      - candidate masters are found via `supplier_keywords`
      - selected matcher strategy computes best match
      - either connect to existing master or create a new master + keywords + connector
+     - when a new master is created, a default 50.0 `sup_c` rating row is seeded in `rmdb_schema.rms_risk_ratings` (`ON CONFLICT DO NOTHING`)
 5. **Write-back to declarations**
    - `rmdb_schema.sad_general_segment` is updated by `instanceid` with:
      - `supplier_name`
@@ -431,6 +433,10 @@ The CLI is file-based and command-driven (no HTTP API). Commands:
   - seeds banned keywords when configured
 - `python main.py migrate`
   - applies migration statements only
+- `python main.py seed-missing-ratings`
+  - inserts default 50.0 `sup_c` ratings into `rmdb_schema.rms_risk_ratings` for supplier masters that have no rating row
+  - existing scored ratings are left unchanged (`ON CONFLICT DO NOTHING`)
+  - use to remediate suppliers created before default seeding was added
 - `python main.py full`
   - full processing from configured `initial_start_date`
   - options:
@@ -625,6 +631,22 @@ Checks:
 
 - review recent changes to `config/settings.yaml` (`matching`, `matching_new`, confidence bands)
 - compare results between default and `--legacy` mode on same date window
+
+#### 5) Suppliers missing risk ratings
+
+Symptoms:
+
+- supplier masters exist in `supplier_schema.supplier_master` with no corresponding `sup_c` row in `rmdb_schema.rms_risk_ratings`
+- downstream analytics (for example `dat_valuation_analysis_sup`, `dat_cusdecs.sup_rating`) show NULL supplier ratings
+
+Common causes:
+
+- master was created before default 50.0 `sup_c` seeding was added to `_create_master`
+- `rms_risk_ratings` row was deleted or never inserted due to an earlier run failure
+
+Remediation:
+
+- run `python main.py seed-missing-ratings` to backfill default 50.0 `sup_c` ratings for all masters that have none (insert-only; existing scored ratings are left unchanged)
 
 ### Updating rules (change behavior without core code)
 

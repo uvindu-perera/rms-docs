@@ -24,6 +24,7 @@ SOURCES=(
   "rms-revenue-extract:rms-revenue-extract"
   "rms-vehicle-annotate:rms-vehicle-annotate"
   "rms-vehicle-review:rms-vehicle-review"
+  "rms-blue-channel-review:rms-blue-channel-review"
 )
 
 echo "Syncing documentation from sibling repos into $DOCS_DIR ..."

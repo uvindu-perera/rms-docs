@@ -31,6 +31,8 @@ in one searchable place.
 - [rms-revenue-extract](rms-revenue-extract.md) — Revenue Dashboard workbook
   loader.
 - [rms-ai-insights](rms-ai-insights.md) — AI-assisted analytical summaries.
+- [rms-blue-channel-review](rms-blue-channel-review.md) — quarterly Blue Channel
+  PCA review, print PDFs, and operator-triggered company mail.
 
 ## Vehicle Import Review
 

@@ -58,6 +58,7 @@ nav:
   - Extraction & Reporting:
       - rms-revenue-extract: rms-revenue-extract.md
       - rms-ai-insights: rms-ai-insights.md
+      - rms-blue-channel-review: rms-blue-channel-review.md
   - Vehicle Import Review:
       - rms-vehicle-annotate: rms-vehicle-annotate.md
       - rms-vehicle-review: rms-vehicle-review.md

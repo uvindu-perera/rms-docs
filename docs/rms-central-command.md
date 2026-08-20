@@ -16,7 +16,9 @@ It provides:
 - retained stdout and stderr tails for troubleshooting;
 - email alerts for failed or partially successful packages;
 - optional daily summary emails;
-- a localhost FastAPI dashboard for package, service, database, and run status;
+- a FastAPI dashboard organized by product groups (ARMS ETL, Simulator,
+  Blue Channel Review) for orchestration monitoring, selectivity-rule
+  simulation, and Blue Channel PCA review;
 - database endpoint discovery and lightweight TCP reachability checks.
 
 Central command does not import or rewrite the business logic of the services it
@@ -80,7 +82,8 @@ rms-central-command/
 │       ├── core_package.yaml
 │       ├── off_peak_package.yaml
 │       ├── ai_off_peak_package.yaml
-│       └── ai_insights_package.yaml
+│       ├── ai_insights_package.yaml
+│       └── blue_channel_review.yaml
 ├── deployment/
 │   ├── env.server.example
 │   ├── MIGRATION.md
@@ -219,6 +222,8 @@ The current registry includes:
 - `rms-vdf-mining`
 - `rms-vehicle-annotate`
 - `rms-vehicle-review`
+- `rms-blue-channel-review`
+- `rms-simulator`
 
 Registration makes a service available to packages. It does not automatically
 schedule or execute it.
@@ -281,6 +286,7 @@ Cron expressions use `Asia/Colombo` by default.
 | `off_peak_package` | `0 22 * * *` | 22:00 daily | Nightly ETL, analytics, revenue extraction, and vehicle annotation |
 | `ai_off_peak` | `0 23 * * *` | 23:00 daily | Deterministic and local-LLM vehicle review |
 | `ai_insights_package` | `0 9 * * 2` | Tuesday 09:00 | Weekly revenue AI insights |
+| `blue_channel_review` | `0 8 1 1,4,7,10 *` | 08:00 on 1 Jan/Apr/Jul/Oct | Previous-quarter Blue Channel PCA snapshot and PDFs (no mail) |
 
 The YAML configuration is the authoritative source if this table and the live
 deployment ever differ.
@@ -521,13 +527,35 @@ Defaults:
 http://127.0.0.1:8800
 ```
 
+On the production LAN stack, operators open `http://rms-cc.local` (nginx on
+`10.2.55.145`); see Dashboard Security below.
+
 CLI overrides are available:
 
 ```bash
 python src/main.py serve --host 127.0.0.1 --port 8800
 ```
 
-The dashboard provides:
+The dashboard is organized by **product groups** in the top bar, with
+**tabs** for the active group:
+
+- **ARMS ETL** — ARMS Orchestration & Monitoring: Overview, Services & Jobs,
+  Databases, Run History;
+- **Simulator** — Rules & Simulations, Recent Runs, Compare;
+- **Blue Channel Review** — Review (latest PCA snapshot, batch switcher,
+  downloads, Mail, delete this batch), History (all batches, bulk delete).
+
+Additional groups can be registered in `src/web/nav.py` without rewriting the
+base layout.
+
+The Blue Channel Review group reads `rmdb_schema.bcr_*` snapshots written by
+`rms-blue-channel-review`. Quarterly generation is automatic. Emailing company
+packs requires **Full** access and an explicit Mail click; the scheduled
+package never sends mail. Processed batches can be opened from Review or
+History and deleted (snapshot rows plus `output/<run_id>/` PDFs) with Full
+access; a run still marked `running` cannot be deleted.
+
+The dashboard provides (ARMS ETL):
 
 - **Overview**: package status, descriptions, schedules, next runs, recent
   runs, and database health summary;
@@ -567,19 +595,63 @@ failure does not alter the package or step result.
 
 ### Dashboard Security
 
-The current dashboard has no built-in authentication or authorization. Its
-**Run now** action can execute configured packages.
+The dashboard uses **local authentication** (users in
+`orchestrator_schema.app_users`) with signed HTTP-only session cookies.
 
-Keep it bound to `127.0.0.1`. For remote administration, use an SSH tunnel:
+**Setup**
+
+1. Apply auth schema (once):
 
 ```bash
-ssh -L 8800:127.0.0.1:8800 user@server
+psql -h "$RMDB_HOST" -U "$RMDB_USER" -d "$RMDB_DATABASE" \
+  -f deployment/orchestrator_auth.sql
+```
+
+2. Set a strong session secret in `.env`:
+
+```dotenv
+RMS_CC_SESSION_SECRET=<long-random-string>
+RMS_CC_AUTH_ENABLED=true
+```
+
+3. Bootstrap an administrator:
+
+```bash
+python src/main.py create-admin --username admin --password '...'
+```
+
+4. Sign in at `/login`, then use **Admin → Users** to create accounts and set
+   per-tab access: **None** (hidden), **View** (read-only), or **Full**
+   (can run packages / edit simulator / delete).
+
+**LAN access:** expose the dashboard as `http://rms-cc.local` through nginx
+on the gateway host `10.2.55.145`, which reverse-proxies to the app host
+`10.2.60.146:8800`. Bind the app to that NIC IP (not `0.0.0.0`), allow TCP
+`8800` only from the gateway, and set `RMS_CC_DASHBOARD_URL=http://rms-cc.local`
+so email links match the browser URL.
+
+- Gateway site config: `deployment/nginx-rms-cc.conf.example`
+- App-host firewall: `deployment/firewall-146-dashboard.md`
+- DNS: A record `rms-cc.local` → `10.2.55.145` (or interim `/etc/hosts`)
+
+Cookies use `HttpOnly` and `SameSite=Lax`. On plain HTTP LAN, `Secure` is
+off; terminate TLS on nginx when you add HTTPS.
+
+Do not publish the dashboard beyond the LAN. Do not open `8800` to the whole
+network or the internet.
+
+Set `RMS_CC_AUTH_ENABLED=false` only for break-glass local debugging.
+
+**Break-glass (admins):** SSH tunnel to the app host remains valid when the
+proxy is unavailable:
+
+```bash
+ssh -L 8800:10.2.60.146:8800 user@10.2.55.145
+# or, if already on a host that can reach 146:
+ssh -L 8800:127.0.0.1:8800 user@10.2.60.146
 ```
 
 Then open `http://127.0.0.1:8800` locally.
-
-Do not bind it to a public interface unless it is protected by a properly
-configured authenticated reverse proxy and network controls.
 
 ## 10. Email Notifications
 
@@ -592,7 +664,7 @@ RMS_CC_NOTIFY_ENABLED=true
 RMS_CC_NOTIFY_TO=ops@example.com,team@example.com
 RMS_CC_NOTIFY_SUBJECT_PREFIX=[RMS]
 RMS_CC_DAILY_SUMMARY=true
-RMS_CC_DASHBOARD_URL=http://127.0.0.1:8800
+RMS_CC_DASHBOARD_URL=http://rms-cc.local
 
 SMTP_MG_HOST=smtp.mailgun.org
 SMTP_MG_PORT=587
@@ -605,6 +677,11 @@ SMTP_MG_USE_SSL=false
 
 With `SMTP_MG_USE_SSL=false`, central command uses STARTTLS. With `true`, it
 uses implicit TLS through `SMTP_SSL`.
+
+Set `RMS_CC_DASHBOARD_URL` to the same URL clients use in the browser
+(`http://rms-cc.local`). Failure and daily-summary emails append that base
+(plus `/runs/{id}` for package failures). SMTP settings are otherwise
+unchanged.
 
 Failure notifications are sent when a package ends as `failed` or `partial`.
 They include the first failed step and up to 2,000 characters from its stderr
@@ -729,6 +806,7 @@ RMS_CC_RMS_SUPPLIERS_ROOT=/opt/rms-suppliers
 RMS_CC_RMS_VDF_MINING_ROOT=/opt/rms-vdf-mining
 RMS_CC_RMS_VEHICLE_ANNOTATE_ROOT=/opt/rms-vehicle-annotate
 RMS_CC_RMS_VEHICLE_REVIEW_ROOT=/opt/rms-vehicle-review
+RMS_CC_RMS_BLUE_CHANNEL_REVIEW_ROOT=/opt/rms-blue-channel-review
 ```
 
 Validate discovery:
@@ -1045,8 +1123,12 @@ When adding or changing a package:
 
 - Keep `.env` files out of source control.
 - Restrict central and service `.env` permissions.
-- Keep the dashboard on localhost unless protected by authentication.
-- Treat dashboard access as execution access.
+- Prefer LAN access via the gateway proxy (`http://rms-cc.local`); do not
+  expose the dashboard beyond the LAN without authentication and TLS.
+- Keep `RMS_CC_SESSION_SECRET` set in production; treat dashboard **Full**
+  tab access as execution access.
+- Treat dashboard access as execution access when a user has **Full** on
+  Overview, Simulator, or Blue Channel Review tabs.
 - Run systemd under a dedicated non-root account.
 - Grant only the file and database permissions required by the child services.
 - Retained output can contain business data or error context; restrict access to
@@ -1062,9 +1144,8 @@ When adding or changing a package:
 - There is no distributed package lock.
 - Manual and dashboard runs can overlap scheduled runs.
 - Child output is not streamed live.
-- The dashboard has no built-in authentication.
-- Dashboard package launch has no confirmation or per-user authorization.
-- Configuration changes require scheduler restart to affect registered jobs.
+- Authentication is local username/password (no LDAP/SSO yet).
+- Dashboard package launch has no per-user confirmation dialog beyond RBAC.- Configuration changes require scheduler restart to affect registered jobs.
 - Dry-run applies only to positional services.
 - Metrics are best-effort and available only for recognized service logs.
 - Database health is TCP reachability, not an authenticated query.
