@@ -375,4 +375,10 @@ on this site). Summary:
 
 ---
 
-*Last updated: 2026-08-20*
+## Attribution
+
+*Administrative context — separate from the operational sections above.*
+
+> **Developer** — **Uvindu Perera**, Superintendent of Customs, **Risk Management Directorate**.
+>
+> **Modernization context** — **rms-blue-channel-review** is part of a broader program to retire legacy **Java** components built for the **Automated Risk Management System (ARMS)** in favor of **service-oriented Python** applications. It automates quarterly Blue Channel Post Clearance Audit review by snapshotting PCA frauds into `rmdb_schema.bcr_*`, generating print-ready PDFs and cover letters, and supporting operator-triggered company mail from the **rms-central-command** dashboard. Scheduled runs never send email; mailing remains an explicit operator action with optional test-mode redirection.
