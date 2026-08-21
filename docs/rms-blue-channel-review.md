@@ -346,12 +346,17 @@ Package `blue_channel_review` runs on a quarterly schedule:
 
 ## 11. Deployment
 
-See [deployment/DEPLOYMENT.md](../deployment/DEPLOYMENT.md) for:
+Ops detail lives in the private repo at `deployment/DEPLOYMENT.md` (not published
+on this site). Summary:
 
-- Database prerequisites (RMDB PostgreSQL with `sad_general_segment`, `insp_act_tab`, `ins_frd_tab`, `unnfrtab`, `undectab`, `uncmptab`, `ereg_cmp_tab`, `ereg_own_tab`, `analytics_schema.aeo_tier1`)
-- Environment variables
-- Package registration in central-command
-- Cron / systemd setup
+- **Database:** RMDB PostgreSQL with `sad_general_segment`, `insp_act_tab`,
+  `ins_frd_tab`, `unnfrtab`, `undectab`, `uncmptab`, `ereg_cmp_tab`,
+  `ereg_own_tab`, and `analytics_schema.aeo_tier1`
+- **Env:** `RMDB_*` for snapshot/PDF; `SMTP_MG_*` only when mailing
+- **Setup:** `python main.py setup`, then set
+  `RMS_CC_RMS_BLUE_CHANNEL_REVIEW_ROOT` in central-command and restart
+- **Schedule:** package `blue_channel_review` (`0 8 1 1,4,7,10 *` Asia/Colombo);
+  mailing is always operator-triggered from the dashboard
 
 ---
 
