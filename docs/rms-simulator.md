@@ -701,7 +701,7 @@ Scratch registers persist across items of the same declaration (legacy scoping).
 `Consignee`, `Declarant`, `TotalStat`, `ItmTotal`, `CAPRef`, `BolPlcLoad`, `TermsOfPay`, `CuoCod`, `TradingCty`, `CtyExp`, `CtyDestCod`, `CtyLstP`, `TotalTaxes`
 
 *Per-item fields* (indexed by current item):
-`ItmNber`, `Chapter`, `Heading`, `hs_code`, `CtyOrigCod`, `NatProc`, `GrossMass`
+`ItmNber`, `Chapter`, `Heading`, `hs_code`, `CtyOrigCod`, `NatProc`, `GrossMass`, `NetMass`
 
 *Outcome variables* (special — setting these changes the CusDec state):
 `RedLane`, `YellowLane`, `BlueLane`, `Action`
@@ -747,7 +747,8 @@ boolOp (and/or)  >  comparison  >  additive (+ - Plus Minus)  >  multiplicative 
 | `InListCty(list_name)` | 1 | `"Found"` / `"Nope"` | Country of origin membership (exact match) |
 | `InListTar(list_name)` | 1 | `"Found"` / `"Nope"` | HS-code prefix membership (any list value that is a prefix of the item's HS code matches) |
 | `ValStr(str)` | 1 | Integer as string | Parse string to integer; raises error on failure |
-| `RoundSup(num)` | 1 | Integer as string | Ceiling function |
+| `RoundInf(num)` | 1 | Integer as string | Floor function (round down) |
+| `RoundSup(num)` | 1 | Integer as string | Ceiling function (round up) |
 | `newImporter([days])` | 0-1 | `"Found"` / `"False"` | Returns `"Found"` if consignee is NOT in the known-trader set (i.e., is new); `"False"` if known. Optional `days` overrides lookback window |
 | `newDeclarant([days])` | 0-1 | `"Found"` / `"False"` | Returns `"Found"` if declarant is NOT in the known-trader set; `"False"` if known. Optional `days` overrides lookback window |
 | `AddSectionColor(color, section)` | 2 | ZXZ-encoded action value | Produces `"AddSectionColorZXZ<color>ZXZ<section>"`; sets the CusDec section variable for the section name |
@@ -779,7 +780,7 @@ The `CusDec` class (`core/cusdec.py`) is the in-memory representation of a custo
 **Per-item lists** — one entry per item:
 - `itm_nber` (item numbers), `hs_code`, `chapter` (first 2 chars of HS code)
 - `cty_orig_cod` (origin countries), `nat_proc` (national procedure codes)
-- `gross_mass` (gross mass in kg)
+- `gross_mass` (gross mass in kg), `net_mass` (net mass in kg, vit_wgt_net)
 
 **Scratch registers** — 30 variables:
 - `Num01`..`Num16` (integers, initialized to 0)
