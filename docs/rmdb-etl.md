@@ -325,7 +325,7 @@ End-to-end flow for a **scheduled or manual** extraction:
    `QueryBuilder` produces the SELECT for each table definition: plain table, joins, `EXISTS` subqueries, or templated `raw_query` with `@@start_timestamp` / `@@end_timestamp` where applicable.
 
 5. **Apply incremental window**  
-   `DataExtractor._get_incremental_date` chooses the lower bound from `incremental_type` (`yesterday`, `last_7_days`, `watermark`, etc.). How that bound is applied depends on whether the incremental column lives on the main query or inside an EXISTS/raw template.
+   `DataExtractor._get_incremental_date` chooses the lower bound from `incremental_type` (`today`, `yesterday`, `last_7_days`, `watermark`, etc.). A scheduled `yesterday` run is yesterday 00:00 through tomorrow 00:00. A scheduled `today` run is today 00:00 through tomorrow 00:00. An explicit end date is not replaced. How that bound is applied depends on whether the incremental column lives on the main query or inside an EXISTS/raw template.
 
 6. **Execute and fetch**  
    Rows are fetched into memory; Oracle LOBs are normalized when needed.
@@ -550,13 +550,12 @@ You only need Python changes when adding a **new** incremental type, a new datab
 
 #### Design note: `dat_cusdecs` — `UN_ASYBRK_TRACK` binder scope
 
-The **`dat_cusdecs`** extraction (`config/extractions/dat_cusdecs.yaml`) loads CusDec-level rows into **`analytics_schema.dat_cusdecs`**. Incremental detection uses an **`EXISTS`** on **`UN_ASYBRK_TRACK`** filtered to **`e.BINDER_ID = 'B_asysad'`** (CusDec / SAD binder), so a CusDec is included in the daily slice when **that** tracking stream has **`OP_DATE_TIME`** in the window.
+The **`dat_cusdecs`** extraction (`config/extractions/dat_cusdecs.yaml`) loads CusDec-level rows into **`analytics_schema.dat_cusdecs`**. A CusDec is included in the incremental slice when the window has either:
 
-The same query also brings in **inspection-act** aggregates (fraud sums from **`INSP_ACT_TAB`** / **`INS_FRD_TAB`**) and **lifecycle timestamps** built from **`UN_ASYBRK_TRACK`** without restricting those aggregates to `B_asysad`. The same physical track table can hold **other binder IDs** for related processes.
+- **`B_asysad`** activity, where `UN_ASYBRK_IED.instance_id` is the CusDec `INSTANCEID`, or
+- **`B_Inspection_Act`** activity linked through `INSP_ACT_TAB.SAD_SID` (the CusDec `INSTANCEID`). For that binder, `UN_ASYBRK_IED.instance_id` is the inspection-act id, not the CusDec id.
 
-**Open design question (untested):** should the pipeline treat **any** relevant `UN_ASYBRK_TRACK` change (including non–`B_asysad` rows) as a reason to re-upsert the CusDec row, or is **`B_asysad`–only** incremental filtering sufficient? The working assumption is that meaningful inspection-side updates still surface through CusDec tracking as well, but **exceptions are possible** and have **not** been validated with data or reprocessing.
-
-If analysts observe **stale** fraud or lifecycle fields while the CusDec itself did not change in the `B_asysad` stream, revisit the **`EXISTS`** predicate (and possibly align the lifecycle subquery with the same binder rules), then **backfill / reprocess** as needed. The extraction YAML header repeats this note for operators reading the SQL.
+The `changed` id list is built once. Item totals, fraud sums (`INSP_ACT_TAB` / `INS_FRD_TAB`), and lifecycle timestamps are aggregated only for those CusDecs. Fraud sums and lifecycle timestamps are still the full history of each selected CusDec, not only the rows inside the window. The extraction YAML header repeats this note for operators reading the SQL.
 
 ### 6.4 Logging
 
